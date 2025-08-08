@@ -43,7 +43,7 @@ public class Main {
             System.out.println("Admin Login Successful!");
              Admindashboard.showdashboard(); 
         } else {
-            System.out.println("Invalid admin credentials.");
+            System.out.println("Invalid admin username:.");
         }
     }
     

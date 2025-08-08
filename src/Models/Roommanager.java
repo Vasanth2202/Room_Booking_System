@@ -7,25 +7,47 @@ import java.util.Scanner;
 
 public class Roommanager {
     static Scanner input = new Scanner(System.in);
-
+    
+    
     public static void addroom() {
-
         System.out.println("Add Room details:");
         System.out.println("*****************");
         System.out.print("Enter Room No: ");
         int roomno = input.nextInt();
-
         if (isroomexists(roomno)) {
-            System.out.println(" Cannot add. Room number already exists.");
+            System.out.println("Cannot add. Room number already exists.");
             return;
         }
         input.nextLine();
-        System.out.print("Enter Room Type (A/C / Non A/C / Delux / Normal): ");
-        String roomtype = input.nextLine();
+        String roomtype = "";
+        while (true) {
+            System.out.print("Enter Room Type (A/C / Non A/C / Delux / Normal): ");
+            roomtype = input.nextLine().trim().toUpperCase();
+            if (roomtype.equals("A/C") || roomtype.equals("NON A/C") || roomtype.equals("DELUX") || roomtype.equals("NORMAL")) {
+                break;
+            } else {
+                System.out.println("Invalid Room Type! Please enter only: A/C, NON A/C, DELUX, NORMAL.");
+            }
+        }
         System.out.print("Enter Price: ");
         int price = input.nextInt();
-        System.out.print("Is Available? (true/false): ");
-        boolean available = input.nextBoolean();
+        input.nextLine(); 
+        
+        String availableInput = "";
+        boolean available = false;
+        while (true) {
+            System.out.print("Is Available? (y/n): ");
+            availableInput = input.nextLine().trim().toLowerCase();
+            if (availableInput.equals("y")) {
+                available = true;
+                break;
+            } else if (availableInput.equals("n")) {
+                available = false;
+                break;
+            } else {
+                System.out.println("Invalid input. Please enter 'y' for Yes or 'n' for No.");
+            }
+        }
 
         try {
             Connection con = Databaseconnection.getConnection();
@@ -44,7 +66,6 @@ public class Roommanager {
         }
     }
 
-  
     public static boolean isroomexists(int roomno) {
         try {
             Connection con = Databaseconnection.getConnection();
@@ -52,13 +73,11 @@ public class Roommanager {
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1, roomno);
             ResultSet rs = ps.executeQuery();
-
             if (rs.next()) {
                 String roomType = rs.getString("roomtype");
                 int price = rs.getInt("price");
                 boolean available = rs.getBoolean("available");
-
-                System.out.println("❗ Room already exists:");
+                System.out.println("!..Room already exists:");
                 System.out.println("---------------------------");
                 System.out.println("Room No   : " + roomno);
                 System.out.println("Room Type : " + roomType);
@@ -74,41 +93,35 @@ public class Roommanager {
             ps.close();
             con.close();
             return false;
-
         } catch (Exception e) {
             System.out.println("Error checking room: " + e.getMessage());
             return true;
         }
     }
+
     public static void viewroom() {
         try {
             Connection con = Databaseconnection.getConnection();
             String sql = "SELECT * FROM rooms ORDER BY roomno";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
-
             boolean found = false;
-
             System.out.println("\nRoom Details:");
             System.out.println("------------------------------------------------------------");
             System.out.printf("%-10s %-15s %-10s %-15s\n", "Room No", "Room Type", "Price", "Availability");
             System.out.println("------------------------------------------------------------");
-
             while (rs.next()) {
                 int roomId = rs.getInt("roomno");
                 String roomType = rs.getString("roomtype");
                 int price = rs.getInt("price");
                 boolean available = rs.getBoolean("available");
                 String status = available ? "Available" : "Not Available";
-
                 System.out.printf("%-10d %-15s %-10d %-15s\n", roomId, roomType, price, status);
                 found = true;
             }
-
             if (!found) {
                 System.out.println("No rooms available to display.");
             }
-
             rs.close();
             ps.close();
             con.close();
@@ -118,7 +131,7 @@ public class Roommanager {
         }
     }
     public static void deleteroom() {
-    	Roommanager.viewroom();
+        Roommanager.viewroom();
         System.out.print("Enter Room No to delete: ");
         int roomno = input.nextInt();
         input.nextLine();
@@ -138,37 +151,41 @@ public class Roommanager {
 
         try {
             Connection con = Databaseconnection.getConnection();
-            String sql = "DELETE FROM rooms WHERE roomno = ?";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setInt(1, roomno);
-
-            int deleted = ps.executeUpdate();
+            String deleteBookings = "DELETE FROM bookings WHERE roomno = ?";
+            PreparedStatement ps1 = con.prepareStatement(deleteBookings);
+            ps1.setInt(1, roomno);
+            ps1.executeUpdate();
+            ps1.close();
+            String deleteRoom = "DELETE FROM rooms WHERE roomno = ?";
+            PreparedStatement ps2 = con.prepareStatement(deleteRoom);
+            ps2.setInt(1, roomno);
+            int deleted = ps2.executeUpdate();
             if (deleted > 0)
                 System.out.println("Room deleted successfully.");
             else
                 System.out.println("Deletion failed.");
-
-            ps.close();
+            ps2.close();
             con.close();
             Roommanager.viewroom();
-            
         } catch (Exception e) {
             System.out.println("Error deleting room: " + e.getMessage());
         }
     }
 
+
     public static void deleteallrooms() {
-        Connection con = null;
         try {
-            con = Databaseconnection.getConnection();
+            Connection con = Databaseconnection.getConnection();
             String deleteBookings = "DELETE FROM bookings";
             PreparedStatement ps1 = con.prepareStatement(deleteBookings);
-            int bookingsDeleted = ps1.executeUpdate();
+            ps1.executeUpdate();
+
             String deleteRooms = "DELETE FROM rooms";
             PreparedStatement ps2 = con.prepareStatement(deleteRooms);
-            int roomsDeleted = ps2.executeUpdate();
-            System.out.println("All rooms deleted successfully!");
-//            System.out.println("" + roomsDeleted + " room(s) and " + bookingsDeleted + " booking(s) were removed.");
+            ps2.executeUpdate();
+
+            System.out.println("All rooms and bookings deleted successfully.");
+
             ps1.close();
             ps2.close();
             con.close();

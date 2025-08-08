@@ -6,52 +6,56 @@ import java.sql.ResultSet;
 
 public class Bookingmanager {
 
-	public static void viewallbookings() {
-        String sql = "SELECT b.booking_id, c.name AS customer_name, r.roomno, r.roomtype, " +
-                     "b.checkin, b.checkout, b.status, b.price, b.totalcost " +
-                     "FROM bookings b " +
-                     "JOIN customer c ON b.customerid = c.customer_id " +
-                     "JOIN rooms r ON b.roomno = r.roomno " +
-                     "ORDER BY b.booking_id";
+	 public static void viewallbookings() {
+	        String sql = "SELECT b.booking_id, c.name AS customer_name, r.roomno, r.roomtype, " +
+	                     "b.checkin, b.checkout, b.status, r.price, b.totalcost " +
+	                     "FROM bookings b " +
+	                     "JOIN customer c ON b.customerid = c.customer_id " +
+	                     "JOIN rooms r ON b.roomno = r.roomno " +
+	                     "ORDER BY b.booking_id";
 
-        try {
-        	Connection con = Databaseconnection.getConnection();
-            PreparedStatement ps = con.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
-            System.out.println("\n All Bookings:");
-            System.out.println("-----------------------------------------------------------------------------------------------------");
-            System.out.printf("%-10s %-15s %-8s %-12s %-12s %-12s %-10s %-10s %-10s\n",
-                    "Booking ID", "Customer", "Room No", "Room Type", "Check-in", "Check-out", "Status", "Price", "Total");
-            System.out.println("-----------------------------------------------------------------------------------------------------");
+	        try {
+	            Connection con = Databaseconnection.getConnection();
+	            PreparedStatement ps = con.prepareStatement(sql);
+	            ResultSet rs = ps.executeQuery();
 
-            boolean found = false;
+	            System.out.println("\nAll Bookings:");
+	            System.out.println("-----------------------------------------------------------------------------------------------------");
+	            System.out.printf("%-10s %-15s %-8s %-12s %-12s %-12s %-12s %-10s %-10s\n",
+	                    "Booking ID", "Customer", "Room No", "Room Type", "Check-in", "Check-out", "Status", "Price", "Total");
+	            System.out.println("-----------------------------------------------------------------------------------------------------");
 
-            while (rs.next()) {
-                found = true;
-                int bookingid = rs.getInt("booking_id");
-                String customername = rs.getString("customer_name");
-                int roomno = rs.getInt("roomno");
-                String roomtype = rs.getString("roomtype");
-                String checkin = rs.getString("checkin");
-                String checkout = rs.getString("checkout");
-                String status = rs.getString("status");
-                int price = rs.getInt("price");
-                int total = rs.getInt("totalcost");
+	            boolean found = false;
 
-                System.out.printf("%-10d %-15s %-8d %-12s %-12s %-12s %-10s ₹%-9d ₹%-9d\n",
-                        bookingid, customername, roomno, roomtype,
-                        checkin, (checkout == null ? "-" : checkout),
-                        status, price, total);
-            }
+	            while (rs.next()) {
+	                found = true;
+	                int bookingid = rs.getInt("booking_id");
+	                String customername = rs.getString("customer_name");
+	                int roomno = rs.getInt("roomno");
+	                String roomtype = rs.getString("roomtype");
+	                String checkin = rs.getString("checkin");
+	                String checkout = rs.getString("checkout");
+	                String status = rs.getString("status");
+	                int price = rs.getInt("price");
+	                int total = rs.getInt("totalcost");
 
-            if (!found) {
-                System.out.println("No bookings found.");
-            }
+	                System.out.printf("%-10d %-15s %-8d %-12s %-12s %-12s %-12s %-10s %-10s\n",
+	                        bookingid, customername, roomno, roomtype,
+	                        checkin, (checkout == null ? "-" : checkout),
+	                        status, "₹" + price, "₹" + total);
+	            }
 
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
+	            if (!found) {
+	                System.out.println("No bookings found.");
+	            }
+
+	            rs.close();
+	            ps.close();
+	            con.close();
+
+	        } catch (Exception e) {
+	            System.out.println("Error fetching bookings: " + e.getMessage());
+	        }
+	    }
+	}
 	
-}
-

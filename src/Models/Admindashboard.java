@@ -16,8 +16,8 @@ public class Admindashboard {
             System.out.println("4. Delete Room");
             System.out.println("5. All Bookings:");
             System.out.println("6. Add a admin");
-            System.out.println("7. Delete All Booking");
-            System.out.println("8. Logout");
+//            System.out.println("7. Delete All Booking");
+            System.out.println("7. Logout");
             System.out.print("Select your option: ");
             choice = input.nextInt();
             input.nextLine();
@@ -41,10 +41,10 @@ public class Admindashboard {
                 case 6:
                  Adminmanager.addadmin();
                 	break;
+//                case 7:
+////                	Roommanager.deleteallrooms();
+//                	break;
                 case 7:
-                	Roommanager.deleteallrooms();
-                	break;
-                case 8:
                     System.out.println("Logging out...");
                     return;
                 default:

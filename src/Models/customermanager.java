@@ -52,66 +52,108 @@ public class customermanager {
 //	            return false;
 //	        }
 //	    }
-	    public static void registercustomer() {
-	        Scanner input = new Scanner(System.in);
+	public static void registercustomer() {
+	    Scanner input = new Scanner(System.in);
+	    String name, email, phone, username, password, confirmPassword;
 
-	        System.out.println(" --- Customer Registration --- ");
-	        System.out.print("Name: ");
-	        String name = input.nextLine();
+	    System.out.println(" --- Customer Registration --- ");
 
+	    System.out.print("Name: ");
+	    name = input.nextLine();
+
+	    // Email 
+	    while (true) {
 	        System.out.print("Email: ");
-	        String email = input.next();
+	        email = input.next();
+	        if (email.contains("@") && email.contains(".")) break;
+	        System.out.println("Invalid email. Must contain '@' and a domain like '.com'. Try again.");
+	    }
 
-	        System.out.print("Phone: ");
-	        String phone = input.next();
+	    // Phone number 
+	    while (true) {
+	        System.out.print("Phone (10 digits): ");
+	        phone = input.next();
+	        if (phone.matches("\\d{10}")) break;
+	        System.out.println("Invalid phone number. Must be exactly 10 digits. Try again.");
+	    }
 
+	    // Username
+	    while (true) {
 	        System.out.print("Username: ");
-	        String username = input.next();
-
-	        System.out.print("Password: ");
-	        String password = input.next();
-
-	        System.out.print("Confirm Password: ");
-	        String confirmPassword = input.next();
-
-	        if (!password.equals(confirmPassword)) {
-	            System.out.println("Passwords do not match!");
-	            return;
-	        }
+	        username = input.next();
 
 	        try {
 	            Connection con = Databaseconnection.getConnection();
-
-	            String checkSql = "SELECT COUNT(*) FROM customer WHERE username = ? OR email = ?";
+	            String checkSql = "SELECT COUNT(*) FROM customer WHERE username = ?";
 	            PreparedStatement checkStmt = con.prepareStatement(checkSql);
 	            checkStmt.setString(1, username);
-	            checkStmt.setString(2, email);
 	            ResultSet rs = checkStmt.executeQuery();
 	            rs.next();
 	            if (rs.getInt(1) > 0) {
-	                System.out.println("Username or Email already exists.");
-	                return;
+	                System.out.println("Username already taken. Try a different one.");
+	                continue;
 	            }
-
-	            String sql = "INSERT INTO customer (name, email, phone, username, password) VALUES (?, ?, ?, ?, ?)";
-	            PreparedStatement ps = con.prepareStatement(sql);
-	            ps.setString(1, name);
-	            ps.setString(2, email);
-	            ps.setString(3, phone);
-	            ps.setString(4, username);
-	            ps.setString(5, password);
-
-	            ps.executeUpdate();
-	            System.out.println("Registration successful!");
-
-	            ps.close();
+	            checkStmt.close();
 	            con.close();
-	            Main.login();
-
+	            break;
 	        } catch (Exception e) {
-	            System.out.println("Error: " + e.getMessage());
+	            System.out.println("Error checking username: " + e.getMessage());
+	            return;
 	        }
 	    }
+
+	    // Password 
+	    while (true) {
+	        System.out.print("Password: ");
+	        password = input.next();
+
+	        System.out.print("Confirm Password: ");
+	        confirmPassword = input.next();
+
+	        if (!password.equals(confirmPassword)) {
+	            System.out.println("Passwords do not match. Try again.");
+	            continue;
+	        }
+
+	        if (password.length() < 5 || 
+	            !password.matches(".*\\d.*") || 
+	            !password.matches(".*[!@#$%^&*()].*")) {
+	            System.out.println("Password must be at least 5 characters, include a digit and a special character (!@#$%^&*()).");
+	            continue;
+	        }
+
+	        break; 
+	    }
+
+	    try {
+	        Connection con = Databaseconnection.getConnection();
+	        String checkEmail = "SELECT COUNT(*) FROM customer WHERE email = ?";
+	        PreparedStatement checkStmt = con.prepareStatement(checkEmail);
+	        checkStmt.setString(1, email);
+	        ResultSet rs = checkStmt.executeQuery();
+	        rs.next();
+	        if (rs.getInt(1) > 0) {
+	            System.out.println("Email already registered. Try logging in.");
+	            return;
+	        }
+
+	        String sql = "INSERT INTO customer (name, email, phone, username, password) VALUES (?, ?, ?, ?, ?)";
+	        PreparedStatement ps = con.prepareStatement(sql);
+	        ps.setString(1, name);
+	        ps.setString(2, email);
+	        ps.setString(3, phone);
+	        ps.setString(4, username);
+	        ps.setString(5, password);
+	        ps.executeUpdate();
+	        System.out.println("Registration successful!");
+	        ps.close();
+	        con.close();
+	        Main.login();
+
+	    } catch (Exception e) {
+	        System.out.println("Error: " + e.getMessage());
+	    }
+	}
 	    public static void allusers() {
 	        try {
 	            Connection con = Databaseconnection.getConnection();
@@ -150,15 +192,17 @@ public class customermanager {
 	    public static void bookroom(int customerId) {
 	        Scanner input = new Scanner(System.in);
 
-	        try  {
-	        	Connection con = Databaseconnection.getConnection();
+	        try {
+	            Connection con = Databaseconnection.getConnection();
 	            String sql = "SELECT * FROM rooms WHERE available = TRUE ORDER BY roomno";
 	            PreparedStatement ps = con.prepareStatement(sql);
 	            ResultSet rs = ps.executeQuery();
+
 	            System.out.println("Available Rooms:");
 	            System.out.println("-------------------------------------------------");
 	            System.out.printf("%-10s %-15s %-10s\n", "Room No", "Room Type", "Price");
 	            System.out.println("-------------------------------------------------");
+
 	            boolean found = false;
 	            while (rs.next()) {
 	                System.out.printf("%-10d %-15s ₹%-10d\n",
@@ -172,47 +216,56 @@ public class customermanager {
 	                System.out.println("No available rooms to book.");
 	                return;
 	            }
+
 	            System.out.print("\nEnter Room No to book: ");
 	            int roomno = input.nextInt();
-	            System.out.print("Enter Check-in Date (DD-MM-YYYY): ");
-	            String checkinStr = input.next();
-	            LocalDate checkinDate = LocalDate.parse(checkinStr, DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+
+	            
+	            LocalDate checkinDate = LocalDate.now();
+	            System.out.println("Check-in Date: " + checkinDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy")));
+
 	            System.out.print("Confirm booking? (yes/no): ");
 	            String confirm = input.next();
 	            if (!confirm.equalsIgnoreCase("yes")) {
 	                System.out.println("Booking cancelled.");
 	                return;
 	            }
+
 	            String bookingSql = "INSERT INTO bookings (customerid, roomno, checkin, status) VALUES (?, ?, ?, 'Active')";
 	            PreparedStatement bookStmt = con.prepareStatement(bookingSql);
 	            bookStmt.setInt(1, customerId);
 	            bookStmt.setInt(2, roomno);
 	            bookStmt.setDate(3, java.sql.Date.valueOf(checkinDate));
-
 	            int inserted = bookStmt.executeUpdate();
 	            if (inserted > 0) {
 	                String updateroomsql = "UPDATE rooms SET available = FALSE WHERE roomno = ?";
 	                PreparedStatement updateStmt = con.prepareStatement(updateroomsql);
 	                updateStmt.setInt(1, roomno);
 	                updateStmt.executeUpdate();
-	                System.out.println("Room booked successfully!");
+
+	                System.out.println("Room booked successfully.");
 	            } else {
 	                System.out.println("Failed to book room.");
 	            }
 	            rs.close();
 	            ps.close();
 	            bookStmt.close();
+	            con.close();
 	        } catch (DateTimeParseException e) {
 	            System.out.println("Invalid date format. Please use DD-MM-YYYY.");
 	        } catch (Exception e) {
 	            System.out.println("Error during booking: " + e.getMessage());
 	        }
 	    }
+
+
 	    public static void checkoutroom(int customerId) {
 	        Scanner input = new Scanner(System.in);
 
 	        try {
-	        	Connection con = Databaseconnection.getConnection();
+	            Connection con = Databaseconnection.getConnection();
+
+	       
 	            String sql = "SELECT b.booking_id, b.roomno, b.checkin, r.price " +
 	                         "FROM bookings b JOIN rooms r ON b.roomno = r.roomno " +
 	                         "WHERE b.customerid = ? AND b.status = 'Active'";
@@ -237,11 +290,15 @@ public class customermanager {
 
 	            if (!found) {
 	                System.out.println("No active bookings found.");
+	                rs.close();
+	                ps.close();
 	                return;
 	            }
 
+	            
 	            System.out.print("Enter Booking ID to checkout: ");
 	            int bookingId = input.nextInt();
+
 	            String fetchSql = "SELECT b.checkin, r.price, b.roomno FROM bookings b " +
 	                              "JOIN rooms r ON b.roomno = r.roomno " +
 	                              "WHERE b.booking_id = ? AND b.customerid = ? AND b.status = 'Active'";
@@ -252,17 +309,18 @@ public class customermanager {
 
 	            if (!fetchrs.next()) {
 	                System.out.println("Invalid booking or already checked out.");
+	                rs.close(); ps.close(); fetchrs.close(); fetchstmt.close();
 	                return;
 	            }
+
 	            LocalDate checkin = fetchrs.getDate("checkin").toLocalDate();
 	            int pricePerDay = fetchrs.getInt("price");
 	            int roomno = fetchrs.getInt("roomno");
 
+	            
 	            LocalDate checkout = LocalDate.now();
-	            long days = ChronoUnit.DAYS.between(checkin, checkout);         
-	            if (days == 0) {
-	            	days = 1;
-	            	}
+	            long days = ChronoUnit.DAYS.between(checkin, checkout);
+	            if (days == 0) days = 1;
 
 	            int totalCost = (int) (days * pricePerDay);
 
@@ -270,28 +328,35 @@ public class customermanager {
 	            System.out.println("Days Stayed   : " + days);
 	            System.out.println("Total Cost    : ₹" + totalCost);
 
+	          
 	            System.out.print("Confirm checkout? (yes/no): ");
 	            String confirm = input.next();
 
 	            if (!confirm.equalsIgnoreCase("yes")) {
-	                System.out.println("checkout cancelled.");
+	                System.out.println("Checkout cancelled.");
+	                rs.close(); ps.close(); fetchrs.close(); fetchstmt.close();
 	                return;
 	            }
-	            String updatebooking = "UPDATE bookings SET checkout = ?, totalcost = ?, status = 'Completed' WHERE booking_id = ?";
-	            PreparedStatement updatestmt = con.prepareStatement(updatebooking);
-	            updatestmt.setDate(1, java.sql.Date.valueOf(checkout));
-	            updatestmt.setInt(2, totalCost);
-	            updatestmt.setInt(3, bookingId);
-	            updatestmt.executeUpdate();
-	            String updateroom = "UPDATE rooms SET available = TRUE WHERE roomno = ?";
-	            PreparedStatement updateroomStmt = con.prepareStatement(updateroom);
-	            updateroomStmt.setInt(1, roomno);
-	            updateroomStmt.executeUpdate();
+
+	            String updateBooking = "UPDATE bookings SET checkout = ?, totalcost = ?, status = 'Checked Out' WHERE booking_id = ?";
+	            PreparedStatement updateStmt = con.prepareStatement(updateBooking);
+	            updateStmt.setDate(1, java.sql.Date.valueOf(checkout));
+	            updateStmt.setInt(2, totalCost);
+	            updateStmt.setInt(3, bookingId);
+	            updateStmt.executeUpdate();
+	            String updateRoom = "UPDATE rooms SET available = TRUE WHERE roomno = ?";
+	            PreparedStatement updateRoomStmt = con.prepareStatement(updateRoom);
+	            updateRoomStmt.setInt(1, roomno);
+	            updateRoomStmt.executeUpdate();
+
 	            System.out.println("Checkout successful!");
+	            rs.close();
+	            ps.close();
 	            fetchrs.close();
 	            fetchstmt.close();
-	            updatestmt.close();
-	            updateroomStmt.close();
+	            updateStmt.close();
+	            updateRoomStmt.close();
+
 	        } catch (Exception e) {
 	            System.out.println("Error during checkout: " + e.getMessage());
 	        }
